@@ -20,11 +20,10 @@ def cal_words_freq(files, reverse=True):
     result = {}
     for i in files:
         file = open(i, "r")
-        for word in file.read().split(" "):
+        content = file.read()
+        for word in content.split(" "):
             if word not in result.keys():
-                result[word] = 1
-            else:
-                result[word] += 1
+                result[word] = KMP.count(content, word)
         file.close()
     result2 = []
     for key in result.keys():

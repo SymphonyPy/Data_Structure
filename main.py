@@ -4,9 +4,41 @@ import item_GUI
 import freq_GUI
 import search_GUI
 import create_file_GUI
+import progressbar_GUI
 import File
 import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+
+class progressbar_UI(QtWidgets.QDialog, progressbar_GUI.Ui_Dialog):
+    def __init__(self, value=0, text="123"):
+        super(progressbar_UI, self).__init__()
+        self.setupUi(self)
+        self.retranslateUi(self)
+        self.init()
+        self.setValue(value)
+        self.setText(text)
+
+    def init(self):
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+
+    def setValue(self, value):
+        self.progressBar.setProperty("value", value)
+        if value >= 100:
+            print(123)
+            import time
+            for i in range(3):
+                self.setText("创建完成！..." + str(3 - i))
+                QtWidgets.QApplication.processEvents()
+                time.sleep(1)
+
+    def setText(self, file_pos):
+        if len(file_pos) > 35:
+            string = file_pos.split("/")[0] + "/" + file_pos.split("/")[1] + "/.../" + file_pos.split("/")[-1]
+        else:
+            string = file_pos
+        _translate = QtCore.QCoreApplication.translate
+        self.label.setText(_translate("Dialog", string))
 
 
 class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
@@ -151,22 +183,26 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.retranslateUi(self)
         self.init()
         self.search_status = None
+        self.freqs = None
 
     def init(self):
         self.statusBar().showMessage("欢迎~~~")
         self.pushButton.clicked.connect(self.search)
+        self.pushButton_2.clicked.connect(self.load_package)
         self.pushButton_3.clicked.connect(self.create_file)
         self.pushButton_4.clicked.connect(self.cal_words_freq)
-        self.pushButton_5.clicked.connect(self.buttonClicked)
+        self.pushButton_5.clicked.connect(self.packaging)
         self.action.triggered.connect(self.add_files)
         self.action_3.triggered.connect(self.clear_list)
         self.listWidget.itemDoubleClicked.connect(self.itemClicked)
 
     def add_files(self):
+        self.freqs = None
         ui_file = file_GUI.Ui_FileDialog()
         self.creat_listWidget(ui_file.openFileNamesDialog())
 
     def create_file(self):
+        self.freqs = None
         dialog = create_file_UI()
         file_pos = ""
         if dialog.exec_():
@@ -177,19 +213,73 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             if os.path.isabs(file_pos):
                 pass
             else:
-                file_pos = os.getcwd() + "\\" + file_pos
+                file_pos = os.getcwd() + "\\" + file_pos + ".txt"
             file = open(file_pos, "w")
             file.close()
             self.creat_listWidget([file_pos])
 
     def cal_words_freq(self):
-        files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
-        freqs = File.cal_words_freq(files=files, reverse=True)
-        freq_ui = freq_UI(freqs)
+        total_freq = []
+        result = {}
+        if not self.freqs:
+            files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+            self.freqs = [(file, File.cal_words_freq(files=[file], reverse=True)) for file in files]
+        for word_tuple in self.freqs:
+            for word_and_freq_dict in word_tuple[1]:
+                if word_and_freq_dict["word"] not in result.keys():
+                    result[word_and_freq_dict["word"]] = word_and_freq_dict["num"]
+                else:
+                    result[word_and_freq_dict["word"]] += word_and_freq_dict["num"]
+        for key in result.keys():
+            total_freq.append({"word": key, "num": result[key]})
+
+        def num(result):
+            return result["num"]
+
+        total_freq.sort(key=num, reverse=True)
+        freq_ui = freq_UI(total_freq)
         freq_ui.show()
         freq_ui.exec_()
 
+    def load_package(self):
+        ui_file = file_GUI.Ui_FileDialog()
+        package_pos = ui_file.openFileNameDialog()
+        package = open(package_pos, "r")
+        content = package.read()
+        package.close()
+        self.freqs = eval(content)
+        files = [file[0] for file in self.freqs]
+        self.creat_listWidget(files)
+        self.statusBar().showMessage(package_pos + '读取成功！')
+
+    def packaging(self):
+        dialog = create_file_UI()
+        file_pos = ""
+        if dialog.exec_():
+            file_pos = (QtGui.QStandardItem(dialog.file_pos())).text()
+        proBar_ui = progressbar_UI()
+        proBar_ui.show()
+        files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+        self.freqs = []
+        for file in files:
+            self.freqs.append((file, File.cal_words_freq(files=[file], reverse=True)))
+            proBar_ui.setText(file)
+            proBar_ui.setValue((files.index(file) + 1) * 100 / len(files))
+            QtWidgets.QApplication.processEvents()
+        proBar_ui.close()
+        if file_pos and "\\" not in file_pos:
+            import os
+            if os.path.isabs(file_pos):
+                pass
+            else:
+                file_pos = os.getcwd() + "\\" + file_pos + ".txt"
+            file = open(file_pos, "w")
+            file.write(str(self.freqs))
+            file.close()
+            self.statusBar().showMessage(file_pos + '保存成功！')
+
     def clear_list(self):
+        self.freqs = None
         self.listWidget.clear()
 
     def get_research_content(self):
@@ -212,8 +302,23 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
     def search(self):
         self.search_status = self.get_research_content()
         self.statusBar().showMessage(self.get_research_content() + " 的检索结果")
-        files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
-        result = File.search(files, self.get_research_content())
+        if self.freqs:
+            result = []
+            for word_tuple in self.freqs:
+                temp = {"file": word_tuple[0], "num": 0}
+                for word_and_freq_dict in word_tuple[1]:
+                    if word_and_freq_dict["word"] == self.search_status:
+                        temp["num"] = word_and_freq_dict["num"]
+                        result.append(temp)
+                        continue
+
+            def num(result):
+                return result["num"]
+
+            result.sort(key=num, reverse=True)
+        else:
+            files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+            result = File.search(files, self.get_research_content())
         self.listWidget.clear()
         for i in result:
             string = i["file"] + "\t\t\t" + str(i["num"]) + "次"

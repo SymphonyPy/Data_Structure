@@ -22,19 +22,16 @@ class Ui_FileDialog(QWidget):
         self.show()
 
     def openFileNameDialog(self):
-        pass
-        # options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
-        # fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
-        #                                           "All Files (*);;Python Files (*.py)", options=options)
-        # if fileName:
-        #     print(fileName)
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "选择要导入索引文件", "", "TXT Files (*.txt)", options=options)
+        if fileName:
+            return fileName
 
     def openFileNamesDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        files, _ = QFileDialog.getOpenFileNames(self, "QFileDialog.getOpenFileNames()", "",
-                                                "TXT Files (*.txt)", options=options)
+        files, _ = QFileDialog.getOpenFileNames(self, "选择要导入的文件", "", "TXT Files (*.txt)", options=options)
         if files:
             return files
 
