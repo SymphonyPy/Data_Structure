@@ -87,11 +87,6 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
     def count(self):
         self.next_word()
         keyword = self.lineEdit.text()
-        lf.lineEdit_2.text()
-        text_ = self.ob.textEdit.toPlainText().replace(keyword, substitute_to)
-        self.ob.textEdit.setText(text_)
-        self.ob.file.set_content(text_)
-        self.ob.highlight(
         if keyword:
             import KMP
             result = KMP.count(self.ob.file.get_content(), keyword)
@@ -104,7 +99,11 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
     def substitute_all(self):
         keyword = self.lineEdit.text()
         if keyword:
-            substitute_to = sesubstitute_to)
+            substitute_to = self.lineEdit_2.text()
+            text_ = self.ob.textEdit.toPlainText().replace(keyword, substitute_to)
+            self.ob.textEdit.setText(text_)
+            self.ob.file.set_content(text_)
+            self.ob.highlight(substitute_to)
 
 
 class freq_UI(QtWidgets.QDialog, freq_GUI.Ui_Dialog):
