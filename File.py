@@ -56,6 +56,22 @@ class File(object):
     def get_apperance_num(self, word):
         return KMP.count(self.get_content(), word)
 
+    def get_huffman_codes(self):
+        codes = []
+        words = []
+        if not self.chars_freqs:
+            self.chars_freqs = Huffman.cal_count_freq(self.get_content())
+        if not self.Huffman_codes:
+            self.Huffman_codes = Huffman.cal_Huffman_codes(self.chars_freqs)
+        for char in self.get_content():
+            i = 0
+            for item in self.chars_freqs:
+                if char == item[0] and char not in words:
+                    codes.append((char, self.Huffman_codes[i]))
+                    words.append(char)
+                i += 1
+        return codes
+
     def get_encodeStr(self):
         if not self.chars_freqs:
             self.chars_freqs = Huffman.cal_count_freq(self.get_content())

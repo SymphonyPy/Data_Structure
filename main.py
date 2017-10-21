@@ -5,9 +5,34 @@ import freq_GUI
 import search_GUI
 import create_file_GUI
 import progressbar_GUI
+import huffman_GUI
 import File
 import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+
+class huffman_UI(QtWidgets.QDialog, huffman_GUI.Ui_Dialog):
+    def __init__(self, form):
+        super(huffman_UI, self).__init__()
+        self.setupUi(self)
+        self.retranslateUi(self)
+        self.init(form)
+
+    def init(self, form):
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setRowCount(len(form))
+        self.tableWidget.setHorizontalHeaderLabels(['字符', '编码'])
+        row = 0
+        for item in form:
+            newItem = QtWidgets.QTableWidgetItem(item[0])
+            self.tableWidget.setItem(row, 0, newItem)
+            newItem = QtWidgets.QTableWidgetItem(item[1])
+            self.tableWidget.setItem(row, 1, newItem)
+            row += 1
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.tableWidget)
+        self.setLayout(layout)
 
 
 class progressbar_UI(QtWidgets.QDialog, progressbar_GUI.Ui_Dialog):
@@ -62,21 +87,24 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
     def count(self):
         self.next_word()
         keyword = self.lineEdit.text()
-        import KMP
-        result = KMP.count(self.ob.file.get_content(), keyword)
-        _translate = QtCore.QCoreApplication.translate
-        self.label_3.setText(_translate("Dialog", str(result)))
+        lf.lineEdit_2.text()
+        text_ = self.ob.textEdit.toPlainText().replace(keyword, substitute_to)
+        self.ob.textEdit.setText(text_)
+        self.ob.file.set_content(text_)
+        self.ob.highlight(
+        if keyword:
+            import KMP
+            result = KMP.count(self.ob.file.get_content(), keyword)
+            _translate = QtCore.QCoreApplication.translate
+            self.label_3.setText(_translate("Dialog", str(result)))
 
     def substitute(self):
         pass
 
     def substitute_all(self):
         keyword = self.lineEdit.text()
-        substitute_to = self.lineEdit_2.text()
-        text_ = self.ob.textEdit.toPlainText().replace(keyword, substitute_to)
-        self.ob.textEdit.setText(text_)
-        self.ob.file.set_content(text_)
-        self.ob.highlight(substitute_to)
+        if keyword:
+            substitute_to = sesubstitute_to)
 
 
 class freq_UI(QtWidgets.QDialog, freq_GUI.Ui_Dialog):
@@ -112,17 +140,19 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
         self.setupUi(self)
         self.retranslateUi(self)
         self.file = File.File(file_pos)
-        self.init(keyword)
+        self.init(keyword, file_pos.split("/")[-1])
 
-    def init(self, keyword):
+    def init(self, keyword, filename):
         self.pushButton.clicked.connect(self.encode)
         self.pushButton_2.clicked.connect(self.decode)
-        # self.pushButton_3.clicked.connect(self.buttonClicked)
+        self.pushButton_3.clicked.connect(self.huffman_codes)
         self.pushButton_4.clicked.connect(self.edit)
         self.toolButton.setShortcut('Ctrl+F')
         self.toolButton.clicked.connect(self.search_substitute)
         self.highlight(keyword)
         self.textEdit.setReadOnly(True)
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("Dialog", filename))
 
     def highlight(self, pattern, color="red"):
         self.textEdit.setText(self.file.get_content())
@@ -151,6 +181,11 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
 
     def decode(self):
         self.textEdit.setText(self.file.get_decodeStr(self.file.get_encodeStr()))
+
+    def huffman_codes(self):
+        huffman_ui = huffman_UI(self.file.get_huffman_codes())
+        huffman_ui.show()
+        huffman_ui.exec_()
 
     def edit(self):
         _translate = QtCore.QCoreApplication.translate

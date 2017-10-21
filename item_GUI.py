@@ -45,7 +45,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.pushButton.setText(_translate("Dialog", "编码"))
         self.pushButton_2.setText(_translate("Dialog", "译码"))
-        self.pushButton_3.setText(_translate("Dialog", "Huffman树"))
+        self.pushButton_3.setText(_translate("Dialog", "Huffman Codes"))
         self.pushButton_4.setText(_translate("Dialog", "编辑"))
         self.toolButton.setText(_translate("Dialog", "搜索/替换"))
 
