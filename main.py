@@ -25,7 +25,6 @@ class progressbar_UI(QtWidgets.QDialog, progressbar_GUI.Ui_Dialog):
     def setValue(self, value):
         self.progressBar.setProperty("value", value)
         if value >= 100:
-            print(123)
             import time
             for i in range(3):
                 self.setText("创建完成！..." + str(3 - i))
