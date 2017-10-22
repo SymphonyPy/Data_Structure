@@ -260,11 +260,11 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         for word_tuple in self.freqs:
             for word_and_freq_dict in word_tuple[1]:
                 if word_and_freq_dict["word"] not in result.keys():
-                    result[word_and_freq_dict["word"]] = word_and_freq_dict["num"]
+                    result[word_and_freq_dict["word"]] = len[word_and_freq_dict["pos"]]
                 else:
-                    result[word_and_freq_dict["word"]] += word_and_freq_dict["num"]
+                    result[word_and_freq_dict["word"]] += len(word_and_freq_dict["pos"])
         for key in result.keys():
-            total_freq.append({"word": key, "num": result[key]})
+            total_freq.append({"word": key, "pos": result[key]})
 
         def num(result):
             return result["num"]
@@ -277,13 +277,14 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
     def load_package(self):
         ui_file = file_GUI.Ui_FileDialog()
         package_pos = ui_file.openFileNameDialog()
-        package = open(package_pos, "r")
-        content = package.read()
-        package.close()
-        self.freqs = eval(content)
-        files = [file[0] for file in self.freqs]
-        self.creat_listWidget(files)
-        self.statusBar().showMessage(package_pos + '读取成功！')
+        if package_pos:
+            package = open(package_pos, "r")
+            content = package.read()
+            package.close()
+            self.freqs = eval(content)
+            files = [file[0] for file in self.freqs]
+            self.creat_listWidget(files)
+            self.statusBar().showMessage(package_pos + '读取成功！')
 
     def packaging(self):
         dialog = create_file_UI()
@@ -295,7 +296,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
         self.freqs = []
         for file in files:
-            self.freqs.append((file, File.cal_words_freq(files=[file], reverse=True)))
+            self.freqs.append((file, File.cal_words_positions(files=[file])))
             proBar_ui.setText(file)
             proBar_ui.setValue((files.index(file) + 1) * 100 / len(files))
             QtWidgets.QApplication.processEvents()
@@ -341,7 +342,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
                 temp = {"file": word_tuple[0], "num": 0}
                 for word_and_freq_dict in word_tuple[1]:
                     if word_and_freq_dict["word"] == self.search_status:
-                        temp["num"] = word_and_freq_dict["num"]
+                        temp["num"] = len(word_and_freq_dict["pos"])
                         result.append(temp)
                         continue
 

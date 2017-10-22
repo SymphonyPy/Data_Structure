@@ -36,6 +36,21 @@ def cal_words_freq(files, reverse=True):
     return result2
 
 
+def cal_words_positions(files):
+    result = {}
+    for i in files:
+        file = open(i, "r")
+        content = file.read()
+        for word in content.split(" "):
+            if word not in result.keys():
+                result[word] = KMP.positions(content, word)
+        file.close()
+    result2 = []
+    for key in result.keys():
+        result2.append({"word": key, "pos": result[key]})
+    return result2
+
+
 class File(object):
     def __init__(self, file_pos):
         self.pos = file_pos

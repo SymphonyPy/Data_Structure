@@ -31,6 +31,16 @@ def kmp(s, p):
         return -1
 
 
+def positions(string, pattern):
+    poss = []
+    pos = kmp(string, pattern)
+    while pos != -1:
+        string = string[:pos] + string[pos + len(pattern):]
+        poss.append(pos)
+        pos = kmp(string, pattern)
+    return poss
+
+
 def count(string, pattern):
     total = 0
     pos = kmp(string, pattern)
