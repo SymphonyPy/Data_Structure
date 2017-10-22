@@ -1,7 +1,6 @@
 import main_GUI
 import file_GUI
 import item_GUI
-import freq_GUI
 import search_GUI
 import create_file_GUI
 import progressbar_GUI
@@ -20,15 +19,19 @@ class huffman_UI(QtWidgets.QDialog, huffman_GUI.Ui_Dialog):
 
     def init(self, form):
         self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setColumnCount(3)
         self.tableWidget.setRowCount(len(form))
-        self.tableWidget.setHorizontalHeaderLabels(['字符', '编码'])
+        self.tableWidget.setColumnWidth(0, 50)
+        self.tableWidget.setColumnWidth(1, 100)
+        self.tableWidget.setHorizontalHeaderLabels(['字符', "出现次数", '编码'])
         row = 0
         for item in form:
             newItem = QtWidgets.QTableWidgetItem(item[0])
             self.tableWidget.setItem(row, 0, newItem)
-            newItem = QtWidgets.QTableWidgetItem(item[1])
+            newItem = QtWidgets.QTableWidgetItem(str(item[1]))
             self.tableWidget.setItem(row, 1, newItem)
+            newItem = QtWidgets.QTableWidgetItem(item[2])
+            self.tableWidget.setItem(row, 2, newItem)
             row += 1
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.tableWidget)
@@ -72,6 +75,9 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
         self.retranslateUi(self)
         self.init()
         self.ob = item_ui
+        self.word = ""
+        self.index = None
+        self.pos = None
 
     def init(self):
         self.pushButton.clicked.connect(self.next_word)
@@ -79,22 +85,57 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
         self.pushButton_3.clicked.connect(self.substitute)
         self.pushButton_4.clicked.connect(self.substitute_all)
 
+    def prepare(self):
+        def positions(content, pattern):
+            result = []
+            regex = QtCore.QRegExp(pattern)
+            pos = 0
+            index = regex.indexIn(content, pos)
+            while index != -1:
+                result.append(index)
+                pos = index + regex.matchedLength()
+                index = regex.indexIn(content, pos)
+            return result
+
+        keyword = self.lineEdit.text()
+        if self.word != keyword:
+            self.word = keyword
+            self.index = -1
+        self.pos = [(i, i + len(keyword)) for i in positions(self.ob.textEdit.toPlainText(), keyword)]
+
     def next_word(self):
+        self.prepare()
         keyword = self.lineEdit.text()
         if keyword:
+            self.index = (self.index + 1) % len(self.pos)
             self.ob.highlight(keyword)
+            self.ob.highlight_specific(self.pos[self.index])
 
     def count(self):
-        self.next_word()
+        self.prepare()
         keyword = self.lineEdit.text()
+        self.ob.highlight(keyword)
         if keyword:
-            import KMP
-            result = KMP.count(self.ob.file.get_content(), keyword)
+            result = len(self.pos)
             _translate = QtCore.QCoreApplication.translate
             self.label_3.setText(_translate("Dialog", str(result)))
 
     def substitute(self):
-        pass
+        self.prepare()
+        keyword = self.lineEdit.text()
+        if keyword and self.pos:
+            self.index = self.index % len(self.pos)
+            substitute_to = self.lineEdit_2.text()
+            text_1 = self.ob.textEdit.toPlainText()[:self.pos[self.index][0]]
+            text_2 = self.ob.textEdit.toPlainText()[self.pos[self.index][1]:]
+            text_ = text_1 + substitute_to + text_2
+            self.ob.edit()
+            self.ob.textEdit.setText(text_)
+            self.ob.file.set_content(text_)
+            pos = (len(text_1), len(text_1) + len(substitute_to))
+            self.prepare()
+            self.ob.highlight(keyword)
+            self.ob.highlight_specific(pos, color="grey")
 
     def substitute_all(self):
         keyword = self.lineEdit.text()
@@ -106,7 +147,7 @@ class search_UI(QtWidgets.QDialog, search_GUI.Ui_Dialog):
             self.ob.highlight(substitute_to)
 
 
-class freq_UI(QtWidgets.QDialog, freq_GUI.Ui_Dialog):
+class freq_UI(QtWidgets.QDialog, huffman_GUI.Ui_Dialog):
     def __init__(self, freqs):
         super(freq_UI, self).__init__()
         self.setupUi(self)
@@ -114,13 +155,22 @@ class freq_UI(QtWidgets.QDialog, freq_GUI.Ui_Dialog):
         self.init(freqs)
 
     def init(self, freqs):
-        if freqs:
-            order = 1
-            for i in freqs:
-                string = str(order) + ". " + i["word"]
-                string = string + "\t\t\t\t" + str(i["num"]) + "次"
-                self.listWidget.addItem(string)
-                order += 1
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("Dialog", "词频统计"))
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setRowCount(len(freqs))
+        self.tableWidget.setHorizontalHeaderLabels(['字符', "出现次数"])
+        row = 0
+        for item in freqs:
+            newItem = QtWidgets.QTableWidgetItem(item["word"])
+            self.tableWidget.setItem(row, 0, newItem)
+            newItem = QtWidgets.QTableWidgetItem(str(item["num"]))
+            self.tableWidget.setItem(row, 1, newItem)
+            row += 1
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.tableWidget)
+        self.setLayout(layout)
 
 
 class create_file_UI(QtWidgets.QDialog, create_file_GUI.Ui_dialog):
@@ -153,7 +203,7 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Dialog", filename))
 
-    def highlight(self, pattern, color="red"):
+    def highlight(self, pattern, color="yellow"):
         self.textEdit.setText(self.file.get_content())
         if pattern:
             cursor = self.textEdit.textCursor()
@@ -175,6 +225,16 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
                 pos = index + regex.matchedLength()
                 index = regex.indexIn(self.textEdit.toPlainText(), pos)
 
+    def highlight_specific(self, pos=(0, 0), color="grey"):
+        cursor = self.textEdit.textCursor()
+        # Setup the desired format for matches
+        format = QtGui.QTextCharFormat()
+        format.setBackground(QtGui.QBrush(QtGui.QColor(color)))
+        cursor.setPosition(pos[0])
+        for i in range(pos[1] - pos[0]):
+            cursor.movePosition(QtGui.QTextCursor.Right, 1)
+        cursor.mergeCharFormat(format)
+
     def encode(self):
         self.textEdit.setText(self.file.get_encodeStr())
 
@@ -182,7 +242,13 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
         self.textEdit.setText(self.file.get_decodeStr(self.file.get_encodeStr()))
 
     def huffman_codes(self):
-        huffman_ui = huffman_UI(self.file.get_huffman_codes())
+        huffman_codes = self.file.get_huffman_codes()
+        form = []
+        for item in huffman_codes:
+            for tuple in self.file.chars_freqs:
+                if item[0] == tuple[0]:
+                    form.append((item[0], tuple[1], item[1]))
+        huffman_ui = huffman_UI(form)
         huffman_ui.show()
         huffman_ui.exec_()
 
@@ -256,15 +322,15 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         result = {}
         if not self.freqs:
             files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
-            self.freqs = [(file, File.cal_words_freq(files=[file], reverse=True)) for file in files]
+            self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
         for word_tuple in self.freqs:
             for word_and_freq_dict in word_tuple[1]:
                 if word_and_freq_dict["word"] not in result.keys():
-                    result[word_and_freq_dict["word"]] = len[word_and_freq_dict["pos"]]
+                    result[word_and_freq_dict["word"]] = len(word_and_freq_dict["pos"])
                 else:
                     result[word_and_freq_dict["word"]] += len(word_and_freq_dict["pos"])
         for key in result.keys():
-            total_freq.append({"word": key, "pos": result[key]})
+            total_freq.append({"word": key, "num": result[key]})
 
         def num(result):
             return result["num"]
@@ -343,8 +409,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
                 for word_and_freq_dict in word_tuple[1]:
                     if word_and_freq_dict["word"] == self.search_status:
                         temp["num"] = len(word_and_freq_dict["pos"])
-                        result.append(temp)
-                        continue
+                result.append(temp)
 
             def num(result):
                 return result["num"]
