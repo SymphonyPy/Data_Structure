@@ -402,22 +402,21 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
     def search(self):
         self.search_status = self.get_research_content()
         self.statusBar().showMessage(self.get_research_content() + " 的检索结果")
-        if self.freqs:
-            result = []
-            for word_tuple in self.freqs:
-                temp = {"file": word_tuple[0], "num": 0}
-                for word_and_freq_dict in word_tuple[1]:
-                    if word_and_freq_dict["word"] == self.search_status:
-                        temp["num"] = len(word_and_freq_dict["pos"])
-                result.append(temp)
-
-            def num(result):
-                return result["num"]
-
-            result.sort(key=num, reverse=True)
-        else:
+        if not self.freqs:
             files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
-            result = File.search(files, self.get_research_content())
+            self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
+        result = []
+        for word_tuple in self.freqs:
+            temp = {"file": word_tuple[0], "num": 0}
+            for word_and_freq_dict in word_tuple[1]:
+                if word_and_freq_dict["word"] == self.search_status:
+                    temp["num"] = len(word_and_freq_dict["pos"])
+            result.append(temp)
+
+        def num(result):
+            return result["num"]
+
+        result.sort(key=num, reverse=True)
         self.listWidget.clear()
         for i in result:
             string = i["file"] + "\t\t\t" + str(i["num"]) + "次"
