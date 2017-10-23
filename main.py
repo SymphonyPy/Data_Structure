@@ -293,12 +293,12 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.pushButton_5.clicked.connect(self.packaging)
         self.action.triggered.connect(self.add_files)
         self.action_3.triggered.connect(self.clear_list)
-        self.listWidget.itemDoubleClicked.connect(self.itemClicked)
+        self.tableWidget.itemDoubleClicked.connect(self.itemClicked)
 
     def add_files(self):
         self.freqs = None
         ui_file = file_GUI.Ui_FileDialog()
-        self.creat_listWidget(ui_file.openFileNamesDialog())
+        self.creat_tableWidget(ui_file.openFileNamesDialog())
 
     def create_file(self):
         self.freqs = None
@@ -315,13 +315,13 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
                 file_pos = os.getcwd() + "\\" + file_pos + ".txt"
             file = open(file_pos, "w")
             file.close()
-            self.creat_listWidget([file_pos])
+            self.creat_tableWidget([file_pos])
 
     def cal_words_freq(self):
         total_freq = []
         result = {}
         if not self.freqs:
-            files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+            files = self.get_files_from_table()
             self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
         for word_tuple in self.freqs:
             for word_and_freq_dict in word_tuple[1]:
@@ -349,7 +349,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             package.close()
             self.freqs = eval(content)
             files = [file[0] for file in self.freqs]
-            self.creat_listWidget(files)
+            self.creat_tableWidget(files)
             self.statusBar().showMessage(package_pos + '读取成功！')
 
     def packaging(self):
@@ -359,7 +359,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             file_pos = (QtGui.QStandardItem(dialog.file_pos())).text()
         proBar_ui = progressbar_UI()
         proBar_ui.show()
-        files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+        files = self.get_files_from_table()
         self.freqs = []
         for file in files:
             self.freqs.append((file, File.cal_words_positions(files=[file])))
@@ -380,15 +380,39 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
 
     def clear_list(self):
         self.freqs = None
-        self.listWidget.clear()
+        self.tableWidget.clear()
+        self.tableWidget.setHorizontalHeaderLabels(['文件', "词频"])
+        self.tableWidget.setRowCount(0)
 
     def get_research_content(self):
         return self.lineEdit.text()
 
-    def creat_listWidget(self, files):
+    def get_files_from_table(self):
+        files = []
+        row = self.tableWidget.rowCount()
+        for i in range(row):
+            files.append(self.talbeWidget.item(i, 0).text())
+        return files
+
+    def creat_tableWidget(self, files, nums=[]):
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setRowCount(len(files))
+        self.tableWidget.setColumnWidth(0, 640)
+        self.tableWidget.setColumnWidth(1, 80)
+        self.tableWidget.setHorizontalHeaderLabels(['文件', "词频"])
         if files:
+            row = 0
             for file in files:
-                self.listWidget.addItem(file)
+                newItem = QtWidgets.QTableWidgetItem(file)
+                self.tableWidget.setItem(row, 0, newItem)
+                row += 1
+        if nums:
+            row = 0
+            for num in nums:
+                newItem = QtWidgets.QTableWidgetItem(str(num))
+                self.tableWidget.setItem(row, 1, newItem)
+                row += 1
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Message', "真退出？",
@@ -403,7 +427,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.search_status = self.get_research_content()
         self.statusBar().showMessage(self.get_research_content() + " 的检索结果")
         if not self.freqs:
-            files = [self.listWidget.item(i).text().split("\t")[0] for i in range(self.listWidget.count())]
+            files = self.get_files_from_table()
             self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
         result = []
         for word_tuple in self.freqs:
@@ -417,18 +441,23 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             return result["num"]
 
         result.sort(key=num, reverse=True)
-        self.listWidget.clear()
+        self.tableWidget.clear()
+        files = []
+        nums = []
         for i in result:
-            string = i["file"] + "\t\t\t" + str(i["num"]) + "次"
-            self.listWidget.addItem(string)
+            files.append(i["file"])
+            nums.append(i["num"])
+        self.creat_tableWidget(files, nums)
 
     def buttonClicked(self):
         sender = self.sender()
         self.statusBar().showMessage(str(sender) + ' was pressed')
 
-    def itemClicked(self, index):
-        self.statusBar().showMessage(str(index.text()).split("\t")[0])
-        item_ui = item_UI(index.text().split("\t")[0], self.search_status)
+    def itemClicked(self):
+        row = self.tableWidget.currentColumn()
+        file = self.tableWidget.item(row, 0).text()
+        self.statusBar().showMessage(file)
+        item_ui = item_UI(file, self.search_status)
         item_ui.show()
         item_ui.exec_()
 
