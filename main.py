@@ -198,10 +198,14 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
         self.pushButton_4.clicked.connect(self.edit)
         self.toolButton.setShortcut('Ctrl+F')
         self.toolButton.clicked.connect(self.search_substitute)
+        self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+T"), self)
+        self.shortcut.activated.connect(self.translate)
         self.highlight(keyword)
         self.textEdit.setReadOnly(True)
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Dialog", filename))
+        self.label.setText(_translate("Dialog", "选中内容后，按Ctrl+T翻译"))
+        self.current_selected_string = None
 
     def highlight(self, pattern, color="yellow"):
         self.textEdit.setText(self.file.get_content())
@@ -274,6 +278,37 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
         search_ui.show()
         search_ui.exec_()
 
+    def translate(self):
+        import requests
+        def t(string):
+            import bs4
+            rooturl = 'http://www.youdao.com/w/'
+            finurl = rooturl + string
+            res = {}
+            res['word'] = string
+            try:
+                response = requests.get(finurl)
+                soup = bs4.BeautifulSoup(response.text, 'html.parser')
+                tran = soup.select('.trans-container > ul > li')[0].get_text()
+                res['翻译'] = tran
+            except IndexError:
+                res['翻译'] = "好像没找到这个词..."
+            return res
+
+        internet = requests.get("http://www.baidu.com").status_code
+        if internet == 200:
+            string = self.textEdit.textCursor().selectedText()
+            if " " in string:
+                _translate = QtCore.QCoreApplication.translate
+                self.label.setText(_translate("Dialog", "只能查单词哟~~"))
+                return True
+            result = t(string)
+            _translate = QtCore.QCoreApplication.translate
+            self.label.setText(_translate("Dialog", result["翻译"]))
+        else:
+            _translate = QtCore.QCoreApplication.translate
+            self.label.setText(_translate("Dialog", "似乎没有联网..."))
+
 
 class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
     def __init__(self):
@@ -298,7 +333,9 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
     def add_files(self):
         self.freqs = None
         ui_file = file_GUI.Ui_FileDialog()
-        self.creat_tableWidget(ui_file.openFileNamesDialog())
+        files = ui_file.openFileNamesDialog()
+        if files:
+            self.creat_tableWidget(files)
 
     def create_file(self):
         self.freqs = None
@@ -394,13 +431,13 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             files.append(self.talbeWidget.item(i, 0).text())
         return files
 
-    def creat_tableWidget(self, files, nums=[]):
+    def creat_tableWidget(self, files, nums=[], poss=[]):
         self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setColumnCount(3)
         self.tableWidget.setRowCount(len(files))
         self.tableWidget.setColumnWidth(0, 640)
         self.tableWidget.setColumnWidth(1, 80)
-        self.tableWidget.setHorizontalHeaderLabels(['文件', "词频"])
+        self.tableWidget.setHorizontalHeaderLabels(['文件', "词频", "位置"])
         if files:
             row = 0
             for file in files:
@@ -412,6 +449,12 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             for num in nums:
                 newItem = QtWidgets.QTableWidgetItem(str(num))
                 self.tableWidget.setItem(row, 1, newItem)
+                row += 1
+        if poss:
+            row = 0
+            for pos in poss:
+                newItem = QtWidgets.QTableWidgetItem(str(pos)[1:-1])
+                self.tableWidget.setItem(row, 2, newItem)
                 row += 1
 
     def closeEvent(self, event):
@@ -431,10 +474,11 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
         result = []
         for word_tuple in self.freqs:
-            temp = {"file": word_tuple[0], "num": 0}
+            temp = {"file": word_tuple[0], "num": 0, "pos": []}
             for word_and_freq_dict in word_tuple[1]:
                 if word_and_freq_dict["word"] == self.search_status:
                     temp["num"] = len(word_and_freq_dict["pos"])
+                    temp["pos"] = word_and_freq_dict["pos"]
             result.append(temp)
 
         def num(result):
@@ -444,10 +488,12 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.tableWidget.clear()
         files = []
         nums = []
+        poss = []
         for i in result:
             files.append(i["file"])
             nums.append(i["num"])
-        self.creat_tableWidget(files, nums)
+            poss.append(i["pos"])
+        self.creat_tableWidget(files, nums, poss)
 
     def buttonClicked(self):
         sender = self.sender()

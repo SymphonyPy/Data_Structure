@@ -14,6 +14,10 @@ class Ui_Dialog(object):
         Dialog.resize(800, 600)
         self.textEdit = QtWidgets.QTextEdit(Dialog)
         self.textEdit.setGeometry(QtCore.QRect(10, 47, 778, 516))
+        font = QtGui.QFont()
+        font.setFamily("SimSun-ExtB")
+        font.setPointSize(12)
+        self.textEdit.setFont(font)
         self.textEdit.setObjectName("textEdit")
         self.horizontalLayoutWidget = QtWidgets.QWidget(Dialog)
         self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 778, 30))
@@ -36,6 +40,9 @@ class Ui_Dialog(object):
         self.toolButton = QtWidgets.QToolButton(Dialog)
         self.toolButton.setGeometry(QtCore.QRect(706, 570, 81, 21))
         self.toolButton.setObjectName("toolButton")
+        self.label = QtWidgets.QLabel(Dialog)
+        self.label.setGeometry(QtCore.QRect(10, 570, 681, 21))
+        self.label.setObjectName("label")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -48,6 +55,7 @@ class Ui_Dialog(object):
         self.pushButton_3.setText(_translate("Dialog", "Huffman Codes"))
         self.pushButton_4.setText(_translate("Dialog", "编辑"))
         self.toolButton.setText(_translate("Dialog", "搜索/替换"))
+        self.label.setText(_translate("Dialog", "TextLabel"))
 
 
 if __name__ == "__main__":
