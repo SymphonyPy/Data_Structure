@@ -358,8 +358,16 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         total_freq = []
         result = {}
         if not self.freqs:
+            self.freqs = []
             files = self.get_files_from_table()
-            self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
+            proBar_ui = progressbar_UI()
+            proBar_ui.show()
+            for file in files:
+                self.freqs.append((file, File.cal_words_positions(files=[file])))
+                proBar_ui.setText(file)
+                proBar_ui.setValue((files.index(file) + 1) * 100 / len(files))
+                QtWidgets.QApplication.processEvents()
+            proBar_ui.close()
         for word_tuple in self.freqs:
             for word_and_freq_dict in word_tuple[1]:
                 if word_and_freq_dict["word"] not in result.keys():
@@ -428,7 +436,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         files = []
         row = self.tableWidget.rowCount()
         for i in range(row):
-            files.append(self.talbeWidget.item(i, 0).text())
+            files.append(self.tableWidget.item(i, 0).text())
         return files
 
     def creat_tableWidget(self, files, nums=[], poss=[]):
