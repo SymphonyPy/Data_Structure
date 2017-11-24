@@ -386,18 +386,18 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         freq_ui.exec_()
 
     def load_package(self):
+        import six.moves.cPickle as pickle
         ui_file = file_GUI.Ui_FileDialog()
-        package_pos = ui_file.openFileNameDialog()
+        package_pos = ui_file.openFileNameDialog(file_type="PKL Files (*.pkl)")
         if package_pos:
-            package = open(package_pos, "r")
-            content = package.read()
-            package.close()
-            self.freqs = eval(content)
+            with open(package_pos, "rb") as package:
+                self.freqs = pickle.load(package)
             files = [file[0] for file in self.freqs]
             self.creat_tableWidget(files)
             self.statusBar().showMessage(package_pos + '读取成功！')
 
     def packaging(self):
+        import six.moves.cPickle as pickle
         dialog = create_file_UI()
         file_pos = ""
         if dialog.exec_():
@@ -417,10 +417,9 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             if os.path.isabs(file_pos):
                 pass
             else:
-                file_pos = os.getcwd() + "\\" + file_pos + ".txt"
-            file = open(file_pos, "w")
-            file.write(str(self.freqs))
-            file.close()
+                file_pos = os.getcwd() + "\\" + file_pos + ".pkl"
+            with open(file_pos, "wb") as file:
+                pickle.dump(self.freqs, file)
             self.statusBar().showMessage(file_pos + '保存成功！')
 
     def clear_list(self):
@@ -475,22 +474,42 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             event.ignore()
 
     def search(self):
+        def word_result(freqs, word):
+            result = []
+            for word_tuple in freqs:
+                temp = {"file": word_tuple[0], "num": 0, "pos": []}
+                for word_and_freq_dict in word_tuple[1]:
+                    if word_and_freq_dict["word"] == word:
+                        temp["num"] = len(word_and_freq_dict["pos"])
+                        temp["pos"] = word_and_freq_dict["pos"]
+                result.append(temp)
+
+            def num(result):
+                return result["num"]
+
+            result.sort(key=num, reverse=True)
+            return result
+
         self.search_status = self.get_research_content()
         self.statusBar().showMessage(self.get_research_content() + " 的检索结果")
+        files = self.get_files_from_table()
         if not self.freqs:
-            files = self.get_files_from_table()
             self.freqs = [(file, File.cal_words_positions(files=[file], reverse=True)) for file in files]
+        temp_result = []
         result = []
-        for word_tuple in self.freqs:
-            temp = {"file": word_tuple[0], "num": 0, "pos": []}
-            for word_and_freq_dict in word_tuple[1]:
-                if word_and_freq_dict["word"] == self.search_status:
-                    temp["num"] = len(word_and_freq_dict["pos"])
-                    temp["pos"] = word_and_freq_dict["pos"]
+        for word in self.search_status.split(";"):
+            temp_result.append(word_result(self.freqs, word))
+        for file in files:
+            temp = {"file": file, "num": "", "pos": []}
+            for i in temp_result:
+                for j in i:
+                    if j["file"] == file:
+                        temp["num"] += str(j["num"]) + "+"
+                        temp["pos"].append(j["pos"])
             result.append(temp)
 
         def num(result):
-            return result["num"]
+            return eval(result["num"][:-1])
 
         result.sort(key=num, reverse=True)
         self.tableWidget.clear()
@@ -499,7 +518,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         poss = []
         for i in result:
             files.append(i["file"])
-            nums.append(i["num"])
+            nums.append(i["num"][:-1])
             poss.append(i["pos"])
         self.creat_tableWidget(files, nums, poss)
 
