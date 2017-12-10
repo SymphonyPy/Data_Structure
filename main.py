@@ -5,9 +5,54 @@ import search_GUI
 import create_file_GUI
 import progressbar_GUI
 import huffman_GUI
+import about_GUI
 import File
 import sys
+import time
 from PyQt5 import QtWidgets, QtCore, QtGui
+
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self):
+        super(SplashScreen, self).__init__(QtGui.QPixmap("start_page.png"))  # 启动程序的图片
+
+    # 效果 fade =1 淡入   fade= 2  淡出，  t sleep 时间 毫秒
+    def effect(self):
+        self.setWindowOpacity(0)
+        t = 0
+        while t <= 50:
+            newOpacity = self.windowOpacity() + 0.1  # 设置淡入
+            if newOpacity > 1:
+                break
+
+            self.setWindowOpacity(newOpacity)
+            self.show()
+            t -= 1
+            time.sleep(0.04)
+
+        time.sleep(1)
+        t = 0
+        while t <= 500:
+            newOpacity = self.windowOpacity() - 0.1  # 设置淡出
+            if newOpacity < 0:
+                break
+
+            self.setWindowOpacity(newOpacity)
+            t += 1
+            time.sleep(0.04)
+
+
+class about_UI(QtWidgets.QDialog, about_GUI.Ui_dialog):
+    def __init__(self):
+        super(about_UI, self).__init__()
+        self.setupUi(self)
+        self.retranslateUi(self)
+        self.init()
+
+    def init(self):
+        self.pushButton.clicked.connect(self.close)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.label.setPixmap(QtGui.QPixmap("icon.png"))
 
 
 class huffman_UI(QtWidgets.QDialog, huffman_GUI.Ui_Dialog):
@@ -327,6 +372,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.pushButton_4.clicked.connect(self.cal_words_freq)
         self.pushButton_5.clicked.connect(self.packaging)
         self.action.triggered.connect(self.add_files)
+        self.action_2.triggered.connect(self.about)
         self.action_3.triggered.connect(self.clear_list)
         self.tableWidget.itemDoubleClicked.connect(self.itemClicked)
 
@@ -336,6 +382,11 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         files = ui_file.openFileNamesDialog()
         if files:
             self.creat_tableWidget(files)
+
+    def about(self):
+        about_ui = about_UI()
+        about_ui.show()
+        about_ui.exec_()
 
     def create_file(self):
         self.freqs = None
@@ -478,10 +529,16 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
             result = []
             for word_tuple in freqs:
                 temp = {"file": word_tuple[0], "num": 0, "pos": []}
-                for word_and_freq_dict in word_tuple[1]:
-                    if word_and_freq_dict["word"] == word:
-                        temp["num"] = len(word_and_freq_dict["pos"])
-                        temp["pos"] = word_and_freq_dict["pos"]
+                if " " not in word:
+                    for word_and_freq_dict in word_tuple[1]:
+                        if word_and_freq_dict["word"] == word:
+                            temp["num"] = len(word_and_freq_dict["pos"])
+                            temp["pos"] = word_and_freq_dict["pos"]
+                else:
+                    import KMP
+                    pos = KMP.positions(File.File(word_tuple[0]).get_content(), word)
+                    temp["num"] = len(pos)
+                    temp["pos"] = pos
                 result.append(temp)
 
             def num(result):
@@ -537,6 +594,10 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    # start_page = QtGui.QPixmap("icon.png")
+    # splash = QtWidgets.QSplashScreen(start_page)
+    splash=SplashScreen()
+    splash.effect()
     ui = UI()
     ui.show()
     sys.exit(app.exec_())
