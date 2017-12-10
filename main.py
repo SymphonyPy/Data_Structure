@@ -10,18 +10,18 @@ import File
 import sys
 import time
 from PyQt5 import QtWidgets, QtCore, QtGui
+from img import *
 
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
-        super(SplashScreen, self).__init__(QtGui.QPixmap("start_page.png"))  # 启动程序的图片
+        super(SplashScreen, self).__init__(QtGui.QPixmap(":start_page.png"))
 
-    # 效果 fade =1 淡入   fade= 2  淡出，  t sleep 时间 毫秒
     def effect(self):
         self.setWindowOpacity(0)
         t = 0
         while t <= 50:
-            newOpacity = self.windowOpacity() + 0.1  # 设置淡入
+            newOpacity = self.windowOpacity() + 0.1
             if newOpacity > 1:
                 break
 
@@ -33,7 +33,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         time.sleep(1)
         t = 0
         while t <= 500:
-            newOpacity = self.windowOpacity() - 0.1  # 设置淡出
+            newOpacity = self.windowOpacity() - 0.1
             if newOpacity < 0:
                 break
 
@@ -52,7 +52,7 @@ class about_UI(QtWidgets.QDialog, about_GUI.Ui_dialog):
     def init(self):
         self.pushButton.clicked.connect(self.close)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.label.setPixmap(QtGui.QPixmap("icon.png"))
+        self.label.setPixmap(QtGui.QPixmap(":icon.png"))
 
 
 class huffman_UI(QtWidgets.QDialog, huffman_GUI.Ui_Dialog):
@@ -594,9 +594,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    # start_page = QtGui.QPixmap("icon.png")
-    # splash = QtWidgets.QSplashScreen(start_page)
-    splash=SplashScreen()
+    splash = SplashScreen()
     splash.effect()
     ui = UI()
     ui.show()
