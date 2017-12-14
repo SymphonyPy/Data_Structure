@@ -31,7 +31,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         self.action.triggered.connect(self.add_files)
         self.action_2.triggered.connect(self.about)
         self.action_3.triggered.connect(self.clear_list)
-        self.tableWidget.itemDoubleClicked.connect(self.itemClicked)
+        self.tableWidget.cellDoubleClicked.connect(self.itemClicked)
 
     def add_files(self):
         self.freqs = None
@@ -237,8 +237,7 @@ class UI(QtWidgets.QMainWindow, main_GUI.Ui_MainWindow):
         sender = self.sender()
         self.statusBar().showMessage(str(sender) + ' was pressed')
 
-    def itemClicked(self):
-        row = self.tableWidget.currentColumn()
+    def itemClicked(self, row, col):
         file = self.tableWidget.item(row, 0).text()
         self.statusBar().showMessage(file)
         item_ui = item_UI(file, self.search_status)
