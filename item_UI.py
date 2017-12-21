@@ -5,6 +5,7 @@ from Original_Model import item_GUI
 from huffman_UI import *
 from search_UI import *
 
+
 class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
     def __init__(self, file_pos, keyword=None):
         super(item_UI, self).__init__()
@@ -117,9 +118,14 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
                 res['翻译'] = "好像没找到这个词..."
             return res
 
-        internet = requests.get("http://www.baidu.com").status_code
-        if internet == 200:
-            string = self.textEdit.textCursor().selectedText()
+        try:
+            internet = requests.get("http://www.baidu.com").status_code
+        except:
+            _translate = QtCore.QCoreApplication.translate
+            self.label.setText(_translate("Dialog", "似乎没有联网..."))
+            return True
+        string = self.textEdit.textCursor().selectedText()
+        if string:
             if " " in string:
                 _translate = QtCore.QCoreApplication.translate
                 self.label.setText(_translate("Dialog", "只能查单词哟~~"))
@@ -129,4 +135,4 @@ class item_UI(QtWidgets.QDialog, item_GUI.Ui_Dialog):
             self.label.setText(_translate("Dialog", result["翻译"]))
         else:
             _translate = QtCore.QCoreApplication.translate
-            self.label.setText(_translate("Dialog", "似乎没有联网..."))
+            self.label.setText(_translate("Dialog", "没有选中任何内容！"))
